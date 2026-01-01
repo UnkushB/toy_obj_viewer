@@ -47,13 +47,13 @@ build cmake_object_order_depends_target_3DObjViewer: phony || cmake_object_order
 build CMakeFiles/3DObjViewer.dir/main.cpp.obj: CXX_COMPILER__3DObjViewer_unscanned_ P$:/3dObjViewer/main.cpp || cmake_object_order_depends_target_3DObjViewer
   DEP_FILE = CMakeFiles\3DObjViewer.dir\main.cpp.obj.d
   FLAGS = -std=gnu++17
-  INCLUDES = -IP:/3dObjViewer/dependencies/glad/include -IP:/3dObjViewer/dependencies -IP:/3dObjViewer/dependencies/glfw/include
+  INCLUDES = -IP:/3dObjViewer/dependencies/glad/include -IP:/3dObjViewer/dependencies -IP:/3dObjViewer/dependencies/glm -IP:/3dObjViewer/dependencies/glfw/include
   OBJECT_DIR = CMakeFiles\3DObjViewer.dir
   OBJECT_FILE_DIR = CMakeFiles\3DObjViewer.dir
 
 build CMakeFiles/3DObjViewer.dir/dependencies/glad/src/glad.c.obj: C_COMPILER__3DObjViewer_unscanned_ P$:/3dObjViewer/dependencies/glad/src/glad.c || cmake_object_order_depends_target_3DObjViewer
   DEP_FILE = CMakeFiles\3DObjViewer.dir\dependencies\glad\src\glad.c.obj.d
-  INCLUDES = -IP:/3dObjViewer/dependencies/glad/include -IP:/3dObjViewer/dependencies -IP:/3dObjViewer/dependencies/glfw/include
+  INCLUDES = -IP:/3dObjViewer/dependencies/glad/include -IP:/3dObjViewer/dependencies -IP:/3dObjViewer/dependencies/glm -IP:/3dObjViewer/dependencies/glfw/include
   OBJECT_DIR = CMakeFiles\3DObjViewer.dir
   OBJECT_FILE_DIR = CMakeFiles\3DObjViewer.dir\dependencies\glad\src
 

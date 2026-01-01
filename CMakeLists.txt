@@ -9,6 +9,7 @@ find_package( OpenGL REQUIRED )
 add_executable(3DObjViewer main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glad/src/glad.c)
 target_include_directories(3DObjViewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glad/include)
 target_include_directories(3DObjViewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
+target_include_directories(3DObjViewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm)
 target_link_libraries(3DObjViewer glfw)
 target_link_libraries(3DObjViewer OpenGL::GL)
 
