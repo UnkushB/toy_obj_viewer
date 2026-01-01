@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"P:/3dObjViewer/build/cmake_install.cmake",
+		"P:/3dObjViewer/build/dependencies/glfw/cmake_install.cmake",
+		"P:/3dObjViewer/build/dependencies/glfw/src/cmake_install.cmake",
+		"P:/3dObjViewer/build/dependencies/glfw/docs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
