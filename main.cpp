@@ -95,7 +95,8 @@ int main() {
     stbi_set_flip_vertically_on_load(true);
 
     int width, height, nr_channels;
-    unsigned char* data = stbi_load("P:/3dObjViewer/input_button.png", &width, &height, &nr_channels, 0);
+    std::string input_img_path = std::filesystem::current_path().parent_path().string() + "/input_button.png";
+    unsigned char* data = stbi_load(input_img_path.c_str(), &width, &height, &nr_channels, 0);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     unsigned int input_button_texture;
