@@ -22,6 +22,12 @@ OPENFILENAMEA f = { sizeof(OPENFILENAMEA) };
 unsigned int peel_depths[2];
 std::vector<unsigned int> color_attachments(layers);
 std::string model_name = std::filesystem::current_path().parent_path().string() + "/default_model/bunny.obj";
+std::string main_shader_vs_path = std::filesystem::current_path().parent_path().string() + "/shaders/shader.vs";
+std::string main_shader_fs_path = std::filesystem::current_path().parent_path().string() + "/shaders/shader.fs";
+std::string button_shader_vs = std::filesystem::current_path().parent_path().string() + "/shaders/input_button_shader.vs";
+std::string button_shader_fs = std::filesystem::current_path().parent_path().string() + "/shaders/input_button_shader.fs";
+std::string screen_shader_vs = std::filesystem::current_path().parent_path().string() + "/shaders/screen.vs";
+std::string screen_shader_fs = std::filesystem::current_path().parent_path().string() + "/shaders/screen.fs";
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* glfwSetup();
@@ -34,9 +40,9 @@ orbit_camera orbit_cam(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
 int main() {
     GLFWwindow* window = glfwSetup();
 
-    Shader main_shader("P:/3dObjViewer/shaders/shader.vs", "P:/3dObjViewer/shaders/shader.fs");
-    Shader input_button_shader("P:/3dObjViewer/shaders/input_button_shader.vs", "P:/3dObjViewer/shaders/input_button_shader.fs");
-    Shader screen_shader("P:/3dObjViewer/shaders/screen.vs", "P:/3dObjViewer/shaders/screen.fs");
+    Shader main_shader(main_shader_vs_path.c_str(), main_shader_fs_path.c_str());
+    Shader input_button_shader(button_shader_vs.c_str(), button_shader_fs.c_str());
+    Shader screen_shader(screen_shader_vs.c_str(), screen_shader_fs.c_str());
     model m(model_name.c_str());
 
     f.lpstrFilter = "obj files\0*.obj\0";
