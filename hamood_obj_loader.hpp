@@ -638,7 +638,6 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
                     float d3 = (point_to_test.x - prev.x) * (next.y - prev.y) - (next.x - prev.x) * (point_to_test.y - prev.y);
 
                     if (d1 >= 0 && d2 >= 0 && d3 >= 0) {
-                        std::cout << "not an ear\n";
                         is_ear = false;
                         break;
                     }
@@ -660,14 +659,10 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
                 infinite_loop = false;
                 break;
             }
-            else {
-                std::cout << "ear not found\n";
-            }
 
         }
 
         if (infinite_loop) {
-            std::cout << "infinite loop detected\n";
             return;
         }
     }

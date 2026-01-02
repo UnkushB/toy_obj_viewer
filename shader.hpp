@@ -52,26 +52,19 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
 
-    std::cout << vertexPath << "\n";
+    vShaderFile.open(vertexPath);
+    fShaderFile.open(fragmentPath);
+    std::stringstream vShaderStream, fShaderStream;
 
-    try {
-        vShaderFile.open(vertexPath);
-        fShaderFile.open(fragmentPath);
-        std::stringstream vShaderStream, fShaderStream;
+    vShaderStream << vShaderFile.rdbuf();
+    fShaderStream << fShaderFile.rdbuf();
 
-        vShaderStream << vShaderFile.rdbuf();
-        fShaderStream << fShaderFile.rdbuf();
+    vShaderFile.close();
+    fShaderFile.close();
 
-        vShaderFile.close();
-        fShaderFile.close();
+    vertexCode = vShaderStream.str();
+    fragmentCode = fShaderStream.str();
 
-        vertexCode = vShaderStream.str();
-        fragmentCode = fShaderStream.str();
-
-    }
-    catch (std::ifstream::failure e) {
-        std::cout << "error reading files for shader class\n";
-    }
 
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
