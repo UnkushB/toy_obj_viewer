@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <cmath>
 #include <windows.h>
+#include <filesystem>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "shader.hpp"
@@ -21,7 +22,7 @@ int layers = 10;
 OPENFILENAMEA f = { sizeof(OPENFILENAMEA) };
 unsigned int peel_depths[2];
 std::vector<unsigned int> color_attachments(layers);
-std::string model_name = "P:\\3dObjViewer\\default_model\\bunny.obj";
+std::string model_name = std::filesystem::current_path().parent_path().string() + "/default_model/bunny.obj";
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* glfwSetup();
@@ -32,6 +33,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 orbit_camera orbit_cam(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 3.0f, 0.0f, 0.0f);
 
 int main() {
+    std::cout << "mdoel Path: " << model_name << std::endl;
     GLFWwindow* window = glfwSetup();
 
     Shader main_shader("P:/3dObjViewer/shaders/shader.vs", "P:/3dObjViewer/shaders/shader.fs");
@@ -136,9 +138,13 @@ int main() {
         bool first_pass = true;
 
         if (swap_model) {
-            std::cout << f.lpstrFile << std::endl;
             m = (f.lpstrFile);
             swap_model = false;
+        }
+
+        if (window_width == 0 || window_height == 0) {
+            glfwWaitEvents();
+            continue;
         }
 
         glViewport(0, 0, window_width, window_height);
@@ -201,7 +207,7 @@ int main() {
         pitch = 0;
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBlendEquation(GL_FUNC_ADD);
@@ -212,11 +218,14 @@ int main() {
         screen_shader.setVec2("screen_size", glm::vec2(window_width, window_height));
 
         for (int i = layers - 1; i >= 0; --i) {
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE5);
             glBindTexture(GL_TEXTURE_2D, color_attachments[i]);
-            screen_shader.setInt("screenTexture", 0);
+            screen_shader.setInt("screenTexture", 5);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
+
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         input_button_shader.use();
         glBindVertexArray(input_button_vao);
@@ -304,7 +313,6 @@ GLFWwindow* glfwSetup() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_SAMPLES, 16);
 
     GLFWwindow* window = glfwCreateWindow(window_width, window_height, "Hamood_Viewer", NULL, NULL);
     if (window == NULL) {
@@ -326,7 +334,6 @@ GLFWwindow* glfwSetup() {
     glViewport(0, 0, window_width, window_height);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
-    glEnable(GL_MULTISAMPLE);
 
     return window;
 }
