@@ -10,6 +10,7 @@
 #include "cam.hpp"
 #include "hamood_obj_loader.hpp"
 
+
 int window_width = 1000, window_height = 1000;
 float yaw = 0.0f, pitch = 0.0f;
 double last_x, last_y;
@@ -44,7 +45,7 @@ int main() {
     Shader input_button_shader(button_shader_vs.c_str(), button_shader_fs.c_str());
     Shader screen_shader(screen_shader_vs.c_str(), screen_shader_fs.c_str());
     model m(model_name.c_str());
-
+    //modeler mer(model_name);
     f.lpstrFilter = "obj files\0*.obj\0";
     f.lpstrTitle = "Select Obj File";
     char buff[MAX_PATH] = {};
@@ -143,7 +144,7 @@ int main() {
         bool first_pass = true;
 
         if (swap_model) {
-            m = (f.lpstrFile);
+            m = model(f.lpstrFile);
             swap_model = false;
         }
 
@@ -157,7 +158,8 @@ int main() {
         float scale = 2.0f / m.radius;
         glm::mat4 Model(1.0f);
         Model = glm::scale(Model, glm::vec3(scale));
-        Model = glm::translate(Model, -true_centroid);
+        Model = glm::translate(Model, -m.centroid);
+        //Model = glm::translate(Model, -true_centroid);
 
         glEnable(GL_DEPTH_TEST);
 

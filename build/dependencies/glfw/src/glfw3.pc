@@ -1,7 +1,7 @@
-prefix=C:/Program Files (x86)/LearnOpenGL
+prefix=C:/Program Files (x86)/3DObjViewer
 exec_prefix=${prefix}
-includedir=C:/Program Files (x86)/LearnOpenGL/include
-libdir=C:/Program Files (x86)/LearnOpenGL/lib
+includedir=C:/Program Files (x86)/3DObjViewer/include
+libdir=C:/Program Files (x86)/3DObjViewer/lib
 
 Name: GLFW
 Description: A multi-platform library for OpenGL, window and input

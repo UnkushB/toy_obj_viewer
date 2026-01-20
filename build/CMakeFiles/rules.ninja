@@ -71,7 +71,7 @@ rule C_STATIC_LIBRARY_LINKER__glfw_
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\mingw64\bin\cmake.exe --regenerate-during-build -SP:\3dObjViewer -BP:\3dObjViewer\build
+  command = C:\mingw64\bin\cmake.exe --regenerate-during-build -SP:\toy_obj_viewer\toy_obj_viewer -BP:\toy_obj_viewer\toy_obj_viewer\build
   description = Re-running CMake...
   generator = 1
 

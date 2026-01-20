@@ -1,8 +1,8 @@
-# Install script for directory: P:/3dObjViewer/dependencies/glfw/src
+# Install script for directory: P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/LearnOpenGL")
+  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/3DObjViewer")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -38,12 +38,12 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "P:/3dObjViewer/build/dependencies/glfw/src/libglfw3.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/src/libglfw3.a")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "P:/3dObjViewer/build/dependencies/glfw/src/install_local_manifest.txt"
+  file(WRITE "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/src/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

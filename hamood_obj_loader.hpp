@@ -1,31 +1,135 @@
-#include <vector>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <fstream>
 #include <glm/glm.hpp>
-#include <algorithm>
-#include <sstream>
-#include <filesystem>
 #include <unordered_map>
+#include <filesystem>
+#include <algorithm>
+#include <memory>
 
-bool is_white_space(char c);
-void skip_white_space_forward(std::string& line, int& index);
-float get_x(std::string& line, int index);
-glm::vec2 get_xy(std::string& line, int index);
-glm::vec3 get_xyz(std::string& line, int index);
-std::string get_line_type(std::string& line, int& index);
-std::string get_current_directory(const char* model_file_path);
+bool is_white_space(char c) {
+    return std::isspace(static_cast<unsigned int>(c));
+}
 
-glm::vec3 sumAC(0), true_centroid(0);
-float total_area = 0;
+void skip_white_space(const std::string& line, size_t& index, bool backwards = false) {
+    if (!backwards) {
+        while (index < line.size() && is_white_space(line.at(index)))
+            ++index;
+    }
+    else {
+        while (index > 0 && is_white_space(line.at(index)))
+            --index;
+    }
+}
 
-enum face_type {
+std::string get_line_type(const std::string& line, size_t& index) {
+    std::string line_type;
+
+    skip_white_space(line, index);
+
+    while (index < line.size() && !is_white_space(line.at(index))) {
+        line_type.push_back(line.at(index));
+        ++index;
+    }
+
+    skip_white_space(line, index);
+
+    return line_type;
+}
+
+float get_value(const std::string& line, size_t index) {
+    float temp = 1.0;
+    std::string num;
+
+    while (index < line.size()) {
+        if (is_white_space(line.at(index))) {
+            temp = static_cast<float>(std::stod(num));
+            num.clear();
+            break;
+        }
+        else {
+            num += line.at(index);
+            ++index;
+        }
+    }
+
+    if (!num.empty()) {
+        temp = static_cast<float>(std::stod(num));
+    }
+
+    return temp;
+}
+
+template <typename glm_vec, size_t N>
+glm_vec get_values(const std::string& line, size_t index) {
+    glm_vec temp{};
+    std::string num;
+    size_t count = 0;
+
+    while (index < line.size() && count < N) {
+        if (is_white_space(line.at(index))) {
+            temp[count] = static_cast<float>(std::stod(num));
+            ++count;
+            num.clear();
+
+            skip_white_space(line, index);
+        }
+        else {
+            num += line.at(index);
+            ++index;
+        }
+    }
+
+    if (!num.empty() && count < N)
+        temp[count] = static_cast<float>(std::stod(num));
+
+    return temp;
+}
+
+enum class face_type {
     v_vt_vn,
     v_vn,
     unsupported
 };
 
-face_type supported_face_type(std::string& line, int temp_index);
+face_type supported_face_type(const std::string& line, size_t index) {
+    int slash_count = 0;
+    size_t first_slash_index = 0;
+    face_type f_type = face_type::unsupported;
+
+    while (index < line.size() && !is_white_space(line.at(index)) && slash_count < 2) {
+        if (line.at(index) == '/' && slash_count == 0) {
+            first_slash_index = index;
+            ++slash_count;
+        }
+        else if (line.at(index) == '/') {
+            if (index - first_slash_index != 1) {
+                f_type = face_type::v_vt_vn;
+                break;
+            }
+            else if (index - first_slash_index == 1) {
+                f_type = face_type::v_vn;
+                break;
+            }
+            ++slash_count;
+        }
+        ++index;
+    }
+
+    return f_type;
+}
+
+class vertex {
+public:
+    glm::vec3 vertex_coord;
+    glm::vec2 texture_coord;
+    glm::vec3 vertex_normal;
+
+    vertex(const glm::vec3& vertex_coord, const glm::vec2& texture_coord, const glm::vec3& vertex_normal) :
+        vertex_coord(vertex_coord), texture_coord(texture_coord), vertex_normal(vertex_normal) {
+    }
+};
 
 class mat {
 public:
@@ -41,56 +145,61 @@ public:
         ks_width(0), ks_height(0),
         kd_nr_channels(0), ks_nr_channels(0) {
     }
+
+    void reset() {
+        kd = glm::vec3(0.2); ks = glm::vec3(1.0);
+        ns = 32.0; d = 1.0;
+        has_kd_map = false; has_ks_map = false;
+        kd_data = nullptr; ks_data = nullptr;
+        kd_width = 0; kd_height = 0;
+        ks_width = 0; ks_height = 0;
+        kd_nr_channels = 0; ks_nr_channels = 0;
+    }
 };
 
 std::unordered_map<std::string, mat> materials;
 
-class vertex {
-public:
-    glm::vec3 vertexCord;
-    glm::vec2 textureCord;
-    glm::vec3 vertexNormal;
-
-    vertex(const glm::vec3& vertexCord, const glm::vec2& textureCord, const glm::vec3& vertexNormal) :
-        vertexCord(vertexCord), textureCord(textureCord), vertexNormal(vertexNormal) {
-    }
-};
-
 class mesh {
 public:
     std::vector<vertex> mesh_vertices;
-    glm::vec3 mesh_centroid;
-    float mesh_area;
-    glm::vec3 meshAC;
     mat* mesh_mat;
-    unsigned int vao, vbo, diffuse_map, spec_map;
     bool has_alpha_val;
-
-    mesh() :mesh_area{ 0 }, meshAC(0.0f), has_alpha_val{ false }, mesh_mat{ nullptr } {}
+    unsigned int vao, vbo, diffuse_map, spec_map;
+    mesh() : vao(0), vbo(0), diffuse_map(0), spec_map(0), mesh_mat{ nullptr }, has_alpha_val{ false } {}
 
     void setup();
     void draw(Shader& shader);
-    void draw_shadows(Shader& shadow_shader);
 
-    mesh(mesh&& m) noexcept : mesh_vertices(std::move(m.mesh_vertices)),
-        mesh_centroid(m.mesh_centroid),
-        mesh_area(m.mesh_area),
-        meshAC(m.meshAC),
-        mesh_mat(m.mesh_mat),
-        vao(m.vao),
-        vbo(m.vbo),
-        diffuse_map(m.diffuse_map),
-        spec_map(m.spec_map),
-        has_alpha_val(m.has_alpha_val)
-    {
-        m.vao = 0;
-        m.vbo = 0;
-        m.diffuse_map = 0;
-        m.spec_map = 0;
-        m.mesh_mat = nullptr;
-        m.mesh_area = 0.0f;
-        m.meshAC = glm::vec3(0.0f);
-        m.has_alpha_val = false;
+    mesh(const mesh&) = delete;
+    mesh& operator=(const mesh&) = delete;
+
+    mesh(mesh&& rhs) {
+        mesh_vertices = std::move(rhs.mesh_vertices);
+        mesh_mat = rhs.mesh_mat;
+        has_alpha_val = rhs.has_alpha_val;
+        vao = rhs.vao; vbo = rhs.vbo;
+        diffuse_map = rhs.diffuse_map; spec_map = rhs.spec_map;
+
+        rhs.vao = 0; rhs.vbo = 0;
+        rhs.diffuse_map = 0; rhs.spec_map = 0;
+        rhs.mesh_mat = nullptr;
+    }
+    mesh& operator=(mesh&& rhs) {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteTextures(1, &diffuse_map);
+        glDeleteTextures(1, &spec_map);
+        mesh_vertices = std::move(rhs.mesh_vertices);
+        mesh_mat = rhs.mesh_mat;
+        has_alpha_val = rhs.has_alpha_val;
+        vao = rhs.vao; vbo = rhs.vbo;
+        diffuse_map = rhs.diffuse_map; spec_map = rhs.spec_map;
+
+        rhs.vao = 0; rhs.vbo = 0;
+        rhs.diffuse_map = 0; rhs.spec_map = 0;
+        rhs.mesh_mat = nullptr;
+
+        return *this;
     }
 
     ~mesh() {
@@ -100,240 +209,6 @@ public:
         glDeleteTextures(1, &spec_map);
     }
 };
-
-void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh);
-
-class model {
-public:
-    std::vector<glm::vec3> model_vertices;
-    std::vector<glm::vec2> model_texture_vertices;
-    std::vector<glm::vec3> model_normals;
-    std::vector<mesh> meshes;
-    float radius;
-
-    model(const char* model_file_path);
-    void unroll_face(std::string& line, int index, mesh& cur_mesh);
-    void unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line, int index);
-    void unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, int index);
-    void parse_mat_file(std::string& mat_file_path, std::string& parent_directory);
-    void setup();
-    void draw(Shader& shader);
-    void draw_shadows(Shader& shadow_shader);
-};
-
-model::model(const char* model_file_path) {
-    std::ifstream model_file(model_file_path);
-    std::string model_file_line;
-    mesh cur_mesh = mesh();
-    bool first_mesh{ true };
-    radius = 0.0f;
-    sumAC = glm::vec3(0); true_centroid = glm::vec3(0);
-    total_area = 0;
-    meshes.clear();
-    materials.clear();
-
-    while (getline(model_file, model_file_line)) {
-        int line_index = 0;
-        std::string line_type(get_line_type(model_file_line, line_index));
-
-        if (line_type == "v") {
-            model_vertices.push_back(get_xyz(model_file_line, line_index));
-        }
-        else if (line_type == "vt") {
-            model_texture_vertices.push_back(get_xy(model_file_line, line_index));
-        }
-        else if (line_type == "vn") {
-            model_normals.push_back(get_xyz(model_file_line, line_index));
-        }
-        else if (line_type == "f") {
-            unroll_face(model_file_line, line_index, cur_mesh);
-        }
-        else if (line_type == "mtllib") {
-            std::string parent_path(get_current_directory(model_file_path));
-            std::string parent_dir = parent_path;
-            std::string mtl_path;
-
-            int i = model_file_line.size() - 1;
-
-            while (i > line_index && is_white_space(model_file_line.at(i))) {
-                --i;
-            }
-
-            for (line_index; line_index <= i; ++line_index) {
-                mtl_path += model_file_line.at(line_index);
-            }
-
-            std::filesystem::path mtlPath(mtl_path);
-
-            if (!mtlPath.is_absolute()) {
-                parent_path += mtlPath.string();
-            }
-            else {
-                parent_path = mtlPath.string();
-            }
-
-            parse_mat_file(parent_path, parent_dir);
-
-        }
-        else if (line_type == "usemtl") {
-            std::string mat_name;
-            int back = model_file_line.size() - 1;
-
-            while (back >= 0 && is_white_space(model_file_line.at(back))) {
-                --back;
-            }
-
-            for (line_index;line_index <= back;++line_index) {
-                mat_name += model_file_line.at(line_index);
-            }
-
-            if (first_mesh) {
-                first_mesh = false;
-                cur_mesh.mesh_mat = &materials[mat_name];
-                continue;
-            }
-            meshes.push_back(std::move(cur_mesh));
-            //cur_mesh = mesh();
-            cur_mesh.mesh_mat = &materials[mat_name];
-        }
-        else {
-
-        }
-    }
-
-    meshes.push_back(std::move(cur_mesh));
-    //cur_mesh = mesh();
-    model_texture_vertices.clear();
-    model_normals.clear();
-
-    setup();
-
-}
-
-void model::parse_mat_file(std::string& mat_file_path, std::string& parent_directory) {
-    std::ifstream mat_file(mat_file_path);
-    std::string mat_file_line;
-    mat cur_mat = mat();
-    bool first_mat{ true };
-    std::string cur_mat_name;
-    materials["default_mat"] = cur_mat;
-
-    while (getline(mat_file, mat_file_line)) {
-        int line_index{ 0 };
-        std::string line_type(get_line_type(mat_file_line, line_index));
-
-        if (line_type == "newmtl") {
-            int back = mat_file_line.size() - 1;
-
-            if (!first_mat) {
-                materials[cur_mat_name] = cur_mat;
-                cur_mat_name.clear();
-                cur_mat = mat();
-            }
-
-            first_mat = false;
-
-            while (back >= 0 && is_white_space(mat_file_line.at(back))) {
-                --back;
-            }
-
-            for (line_index;line_index <= back;++line_index) {
-                cur_mat_name += mat_file_line.at(line_index);
-            }
-
-        }
-        else if (line_type == "Kd") {
-            cur_mat.kd = get_xyz(mat_file_line, line_index);
-        }
-        else if (line_type == "Ks") {
-            cur_mat.ks = get_xyz(mat_file_line, line_index);
-        }
-        else if (line_type == "Ns") {
-            cur_mat.ns = get_x(mat_file_line, line_index);
-        }
-        else if (line_type == "d") {
-            cur_mat.d = get_x(mat_file_line, line_index);
-        }
-        else if (line_type == "map_Kd" || line_type == "map_Ka") {
-            std::string map_path;
-            std::string full_map_path = parent_directory;
-            int back = mat_file_line.size() - 1;
-
-            while (back >= 0 && is_white_space(mat_file_line.at(back))) {
-                --back;
-            }
-
-            for (line_index;line_index <= back;++line_index) {
-                map_path += mat_file_line.at(line_index);
-            }
-
-            std::filesystem::path map_p(map_path);
-
-            if (!map_p.is_absolute()) {
-                full_map_path += map_path;
-            }
-            else {
-                full_map_path = map_path;
-            }
-
-            stbi_set_flip_vertically_on_load(true);
-
-            int width, height, nr_channels;
-            unsigned char* data = stbi_load(full_map_path.data(), &width, &height, &nr_channels, 0);
-
-            if (data) {
-                cur_mat.kd_data = data;
-                cur_mat.has_kd_map = true;
-                cur_mat.kd_nr_channels = nr_channels;
-                cur_mat.kd_width = width;
-                cur_mat.kd_height = height;
-            }
-            else {
-                std::cout << "failed to load kd_map\n";
-            }
-        }
-        else if (line_type == "map_Ks") {
-            std::string map_path;
-            std::string full_map_path = parent_directory;
-            int back = mat_file_line.size() - 1;
-
-            while (back >= 0 && is_white_space(mat_file_line.at(back))) {
-                --back;
-            }
-
-            for (line_index;line_index <= back;++line_index) {
-                map_path += mat_file_line.at(line_index);
-            }
-
-            std::filesystem::path map_p(map_path);
-
-            if (!map_p.is_absolute()) {
-                full_map_path += map_path;
-            }
-            else {
-                full_map_path = map_path;
-            }
-
-            stbi_set_flip_vertically_on_load(true);
-
-            int width, height, nr_channels;
-            unsigned char* data = stbi_load(full_map_path.data(), &width, &height, &nr_channels, 0);
-
-            if (data) {
-                cur_mat.ks_data = data;
-                cur_mat.has_ks_map = true;
-                cur_mat.ks_nr_channels = nr_channels;
-                cur_mat.ks_width = width;
-                cur_mat.ks_height = height;
-            }
-            else {
-                std::cout << "failed to load ks_map\n";
-            }
-        }
-    }
-
-    materials[cur_mat_name] = cur_mat;
-}
 
 void mesh::setup() {
     if (mesh_vertices.size() == 0) {
@@ -345,9 +220,9 @@ void mesh::setup() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * mesh_vertices.size(), &mesh_vertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, textureCord));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, texture_coord));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, vertexNormal));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, vertex_normal));
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
@@ -428,64 +303,35 @@ void mesh::draw(Shader& shader) {
     glBindVertexArray(0);
 }
 
-void model::setup() {
-    for (int i{ 0 }; i < meshes.size();++i) {
-        sumAC += meshes.at(i).meshAC;
-        total_area += meshes.at(i).mesh_area;
-        meshes.at(i).setup();
-    }
+class model {
+public:
+    std::vector<glm::vec3> model_vertices;
+    std::vector<glm::vec2> model_texture_vertices;
+    std::vector<glm::vec3> model_normals;
+    std::vector<mesh> meshes;
+    float model_area;
+    glm::vec3 model_ac, centroid;
+    std::string parent_dir;
+    float radius;
 
-    true_centroid = sumAC / total_area;
+    model(const std::string& model_file_path);
+    void unroll_face(std::string& line, size_t index);
+    void unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, size_t index);
+    void unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line, size_t index);
+    void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh);
+    std::string get_file_path(const std::string& line, size_t index);
+    void parse_mat_file(const std::string& mat_file_path);
+    void setup();
+    void draw(Shader& shader);
 
-    for (auto& v : model_vertices) {
-        radius = std::max(radius, glm::length(v - true_centroid));
-    }
+    model(const model&) = delete;
+    model& operator=(const model&) = delete;
 
-    model_vertices.clear();
-}
+    model(model&& rhs) = default;
+    model& operator=(model&& rhs) = default;
+};
 
-void model::draw(Shader& shader) {
-    for (int i{ 0 }; i < meshes.size();++i) {
-        meshes.at(i).draw(shader);
-    }
-}
-
-void model::unroll_face(std::string& line, int index, mesh& cur_mesh) {
-    face_type f_type = supported_face_type(line, index);
-
-    if (f_type == unsupported) {
-        std::cerr << "unsupported face type: " << line << '\n';
-        return;
-    }
-
-
-    std::vector<vertex> temp_vertices;
-    line += ' ';
-    if (f_type == v_vt_vn) {
-        unroll_v_vt_vn(temp_vertices, line, index);
-    }
-    else if (f_type == v_vn) {
-        unroll_v_vn(temp_vertices, line, index);
-    }
-
-    if (temp_vertices.size() == 3) {
-
-        for (int i = 0;i < temp_vertices.size();++i) {
-            cur_mesh.mesh_vertices.push_back(temp_vertices.at(i));
-        }
-
-        float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at(2).vertexCord - temp_vertices.at(0).vertexCord), (temp_vertices.at(1).vertexCord - temp_vertices.at(0).vertexCord)));
-        glm::vec3 temp_center = (temp_vertices.at(0).vertexCord + temp_vertices.at(1).vertexCord + temp_vertices.at(2).vertexCord) / 3.0f;
-
-        cur_mesh.meshAC += temp_area * temp_center;
-        cur_mesh.mesh_area += temp_area;
-    }
-    else {
-        ear_clipping(temp_vertices, cur_mesh);
-    }
-}
-
-void model::unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, int index) {
+void model::unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, size_t index) {
     std::string indicies[2];
     int count = 0;
     while (index < line.size()) {
@@ -507,7 +353,7 @@ void model::unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, i
                 model_vertices[x], glm::vec2(0), model_normals[y]
             ));
 
-            skip_white_space_forward(line, index);
+            skip_white_space(line, index);
 
             count = 0;
 
@@ -524,7 +370,7 @@ void model::unroll_v_vn(std::vector<vertex>& temp_vertices, std::string& line, i
     }
 }
 
-void model::unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line, int index) {
+void model::unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line, size_t index) {
     std::string indicies[3];
     int count = 0;
     while (index < line.size()) {
@@ -551,7 +397,7 @@ void model::unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line
                 model_vertices[x], model_texture_vertices[y], model_normals[z]
             ));
 
-            skip_white_space_forward(line, index);
+            skip_white_space(line, index);
 
             count = 0;
 
@@ -569,13 +415,151 @@ void model::unroll_v_vt_vn(std::vector<vertex>& temp_vertices, std::string& line
     }
 }
 
-void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
+void model::unroll_face(std::string& line, size_t index) {
+    face_type f_type{ supported_face_type(line, index) };
+
+    if (f_type == face_type::unsupported) {
+        std::cerr << "unsupported face type: " << line << '\n';
+        return;
+    }
+
+    std::vector<vertex> temp_vertices;
+    line += ' ';
+    if (f_type == face_type::v_vt_vn)
+        unroll_v_vt_vn(temp_vertices, line, index);
+    else if (f_type == face_type::v_vn)
+        unroll_v_vn(temp_vertices, line, index);
+
+    if (temp_vertices.size() == 3) {
+
+        for (auto i = 0; i < 3; ++i) {
+            meshes.back().mesh_vertices.emplace_back(temp_vertices.at(i));
+        }
+
+        float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at(2).vertex_coord - temp_vertices.at(0).vertex_coord), (temp_vertices.at(1).vertex_coord - temp_vertices.at(0).vertex_coord)));
+        glm::vec3 temp_center = (temp_vertices.at(0).vertex_coord + temp_vertices.at(1).vertex_coord + temp_vertices.at(2).vertex_coord) / 3.0f;
+
+        model_ac += temp_area * temp_center;
+        model_area += temp_area;
+    }
+    else if (temp_vertices.size() > 3)
+        ear_clipping(temp_vertices, meshes.back());
+}
+
+std::string model::get_file_path(const std::string& line, size_t index) {
+    std::string mtl_path;
+
+    size_t index_back = line.size() - 1;
+
+    skip_white_space(line, index_back, true);
+
+    for (index; index <= index_back; ++index) {
+        mtl_path += line.at(index);
+    }
+
+    std::filesystem::path temp(mtl_path);
+
+    if (!temp.is_absolute())
+        return parent_dir + temp.string();
+    else
+        return temp.string();
+}
+
+void model::parse_mat_file(const std::string& mat_file_path) {
+    std::ifstream mat_file(mat_file_path);
+    std::string mat_file_line;
+
+    std::string cur_mat_name;
+    bool first_mat = true;
+    mat temp_mat{};
+
+    materials.insert({ "default_mat", temp_mat });
+
+    while (getline(mat_file, mat_file_line)) {
+        if (mat_file_line.empty())
+            continue;
+        size_t line_index = 0;
+        std::string line_type(get_line_type(mat_file_line, line_index));
+
+        if (line_type == "newmtl") {
+            size_t index_back = mat_file_line.size() - 1;
+
+            if (!first_mat) {
+                materials[cur_mat_name] = temp_mat;
+                cur_mat_name.clear();
+                temp_mat.reset();
+            }
+
+            first_mat = false;
+
+            skip_white_space(mat_file_line, index_back, true);
+
+            for (line_index; line_index <= index_back; ++line_index) {
+                cur_mat_name += mat_file_line.at(line_index);
+            }
+        }
+        else if (line_type == "Kd") {
+            temp_mat.kd = get_values<glm::vec3, 3>(mat_file_line, line_index);
+        }
+        else if (line_type == "Ks") {
+            temp_mat.ks = get_values<glm::vec3, 3>(mat_file_line, line_index);
+        }
+        else if (line_type == "Ns") {
+            temp_mat.ns = get_value(mat_file_line, line_index);
+        }
+        else if (line_type == "d") {
+            temp_mat.d = get_value(mat_file_line, line_index);
+        }
+        else if (line_type == "map_Ka" || line_type == "map_Kd") {
+            std::string map_path = get_file_path(mat_file_line, line_index);
+
+            stbi_set_flip_vertically_on_load(true);
+
+            int width, height, nr_channels;
+            unsigned char* data = stbi_load(map_path.data(), &width, &height, &nr_channels, 0);
+
+            if (data) {
+                temp_mat.kd_data = data;
+                temp_mat.has_kd_map = true;
+                temp_mat.kd_nr_channels = nr_channels;
+                temp_mat.kd_width = width;
+                temp_mat.kd_height = height;
+            }
+            else {
+                std::cout << "failed to load kd_map on line: " << line_type << std::endl;
+            }
+        }
+        else if (line_type == "map_Ks") {
+            std::string map_path = get_file_path(mat_file_line, line_index);
+
+            stbi_set_flip_vertically_on_load(true);
+
+            int width, height, nr_channels;
+            unsigned char* data = stbi_load(map_path.data(), &width, &height, &nr_channels, 0);
+
+            if (data) {
+                temp_mat.ks_data = data;
+                temp_mat.has_ks_map = true;
+                temp_mat.ks_nr_channels = nr_channels;
+                temp_mat.ks_width = width;
+                temp_mat.ks_height = height;
+            }
+            else {
+                std::cout << "failed to load ks_map on line: " << mat_file_line << std::endl;
+            }
+        }
+    }
+
+    materials[cur_mat_name] = temp_mat;
+}
+
+void model::ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
     //calc surface normal to determine dominate plane
     glm::vec3 surface_normal(0);
 
     for (int i = 0; i < temp_vertices.size();++i) {
-        glm::vec3 current = temp_vertices.at(i).vertexCord;
-        glm::vec3 next = temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord;
+        glm::vec3 current = temp_vertices.at(i).vertex_coord;
+        glm::vec3 next = temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord;
 
         surface_normal.x += (current.y - next.y) * (current.z + next.z);
         surface_normal.y += (current.z - next.z) * (current.x + next.x);
@@ -601,8 +585,8 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
     float signed_area = 0;
 
     for (int i = 0; i < temp_vertices.size();++i) {
-        glm::vec3 current = temp_vertices.at(i).vertexCord;
-        glm::vec3 next = temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord;
+        glm::vec3 current = temp_vertices.at(i).vertex_coord;
+        glm::vec3 next = temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord;
 
         signed_area += (next[index_one] - current[index_one]) * (next[index_two] + current[index_two]);
     }
@@ -615,9 +599,9 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
         bool infinite_loop = true;
 
         for (int i = 0; i < temp_vertices.size();++i) {
-            glm::vec2 prev(temp_vertices.at(i).vertexCord[index_one], temp_vertices.at(i).vertexCord[index_two]);
-            glm::vec2 current(temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord[index_one], temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord[index_two]);
-            glm::vec2 next(temp_vertices.at((i + 2) % temp_vertices.size()).vertexCord[index_one], temp_vertices.at((i + 2) % temp_vertices.size()).vertexCord[index_two]);
+            glm::vec2 prev(temp_vertices.at(i).vertex_coord[index_one], temp_vertices.at(i).vertex_coord[index_two]);
+            glm::vec2 current(temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord[index_one], temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord[index_two]);
+            glm::vec2 next(temp_vertices.at((i + 2) % temp_vertices.size()).vertex_coord[index_one], temp_vertices.at((i + 2) % temp_vertices.size()).vertex_coord[index_two]);
 
             glm::vec2 current_prev(prev - current);
             glm::vec2 current_next(next - current);
@@ -629,9 +613,9 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
                     if (j == i || j == i + 1 || j == i + 2) {
                         continue;
                     }
-                    glm::vec2 point_to_test(temp_vertices.at(j).vertexCord[index_one], temp_vertices.at(j).vertexCord[index_two]);
+                    glm::vec2 point_to_test(temp_vertices.at(j).vertex_coord[index_one], temp_vertices.at(j).vertex_coord[index_two]);
 
-                    glm::vec3 point_to_test2(temp_vertices.at(j).vertexCord);
+                    glm::vec3 point_to_test2(temp_vertices.at(j).vertex_coord);
 
                     float d1 = (point_to_test.x - current.x) * (prev.y - current.y) - (prev.x - current.x) * (point_to_test.y - current.y);
                     float d2 = (point_to_test.x - next.x) * (current.y - next.y) - (current.x - next.x) * (point_to_test.y - next.y);
@@ -649,11 +633,11 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
                 cur_mesh.mesh_vertices.push_back(temp_vertices.at((i + 1) % temp_vertices.size()));
                 cur_mesh.mesh_vertices.push_back(temp_vertices.at((i + 2) % temp_vertices.size()));
 
-                float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord - temp_vertices.at(i).vertexCord), (temp_vertices.at((i + 2) % temp_vertices.size()).vertexCord - temp_vertices.at(i).vertexCord)));
-                glm::vec3 temp_center = (temp_vertices.at(i).vertexCord + temp_vertices.at((i + 1) % temp_vertices.size()).vertexCord + temp_vertices.at((i + 2) % temp_vertices.size()).vertexCord) / 3.0f;
+                float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord - temp_vertices.at(i).vertex_coord), (temp_vertices.at((i + 2) % temp_vertices.size()).vertex_coord - temp_vertices.at(i).vertex_coord)));
+                glm::vec3 temp_center = (temp_vertices.at(i).vertex_coord + temp_vertices.at((i + 1) % temp_vertices.size()).vertex_coord + temp_vertices.at((i + 2) % temp_vertices.size()).vertex_coord) / 3.0f;
 
-                cur_mesh.meshAC += temp_area * temp_center;
-                cur_mesh.mesh_area += temp_area;
+                model_ac += temp_area * temp_center;
+                model_area += temp_area;
 
                 temp_vertices.erase(temp_vertices.begin() + ((i + 1) % temp_vertices.size()));
                 infinite_loop = false;
@@ -671,140 +655,88 @@ void ear_clipping(std::vector<vertex>& temp_vertices, mesh& cur_mesh) {
         cur_mesh.mesh_vertices.push_back(temp_vertices.at(i));
     }
 
-    float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at(2).vertexCord - temp_vertices.at(0).vertexCord), (temp_vertices.at(1).vertexCord - temp_vertices.at(0).vertexCord)));
-    glm::vec3 temp_center = (temp_vertices.at(0).vertexCord + temp_vertices.at(1).vertexCord + temp_vertices.at(2).vertexCord) / 3.0f;
+    float temp_area = 0.5f * glm::length(glm::cross((temp_vertices.at(2).vertex_coord - temp_vertices.at(0).vertex_coord), (temp_vertices.at(1).vertex_coord - temp_vertices.at(0).vertex_coord)));
+    glm::vec3 temp_center = (temp_vertices.at(0).vertex_coord + temp_vertices.at(1).vertex_coord + temp_vertices.at(2).vertex_coord) / 3.0f;
 
-    cur_mesh.meshAC += temp_area * temp_center;
-    cur_mesh.mesh_area += temp_area;
+    model_ac += temp_area * temp_center;
+    model_area += temp_area;
 }
 
-std::string get_line_type(std::string& line, int& index) {
-    std::string line_type;
-
-    skip_white_space_forward(line, index);
-
-    while (index < line.size() && !is_white_space(line.at(index))) {
-        line_type.push_back(line.at(index));
-        ++index;
+void model::setup() {
+    for (auto i = 0; i < meshes.size(); ++i) {
+        meshes.at(i).setup();
     }
 
-    skip_white_space_forward(line, index);
+    centroid = model_ac / model_area;
 
-    return line_type;
-}
-
-std::string get_current_directory(const char* model_file_path) {
-    return std::filesystem::path(model_file_path).parent_path().string() + '/';
-}
-
-float get_x(std::string& line, int index) {
-    float temp = 1.0;
-    std::string num;
-
-    while (index < line.size()) {
-        if (line.at(index) == ' ') {
-            temp = std::stof(num);
-            num.clear();
-            break;
-        }
-        else {
-            num += line.at(index);
-            ++index;
-        }
+    for (auto& v : model_vertices) {
+        radius = std::max(radius, glm::length(v - centroid));
     }
 
-    if (!num.empty()) {
-        temp = std::stof(num);
-    }
-
-    return temp;
+    model_vertices.clear();
+    model_texture_vertices.clear();
+    model_normals.clear();
 }
 
-glm::vec2 get_xy(std::string& line, int index) {
-    glm::vec2 temp_vert(0);
-    int count = 0;
-    std::string num;
-
-    while (index < line.size() && count < 2) {
-        if (line.at(index) == ' ') {
-            temp_vert[count] = std::stod(num);
-            ++count;
-            num.clear();
-
-            skip_white_space_forward(line, index);
-        }
-        else {
-            num += line.at(index);
-            ++index;
-        }
+void model::draw(Shader& shader) {
+    for (auto i = 0; i < meshes.size(); ++i) {
+        meshes.at(i).draw(shader);
     }
-
-    if (!num.empty() && count < 2)
-        temp_vert[count] = std::stof(num);
-
-    return temp_vert;
 }
 
-glm::vec3 get_xyz(std::string& line, int index) {
-    glm::vec3 temp_vert(0);
-    int count = 0;// only want x, y , z
-    std::string num;
+model::model(const std::string& model_file_path) {
+    materials.clear();
+    std::ifstream model_file(model_file_path);
+    std::string model_file_line;
+    parent_dir = std::filesystem::path(model_file_path).parent_path().string() + '/';
+    bool first_mesh = true;
+    model_ac = glm::vec3(0.0f); model_area = 0.0f; centroid = glm::vec3(0.0f);
+    radius = 0.0f;
 
-    while (index < line.size() && count < 3) {
-        if (is_white_space(line.at(index))) {
-            if (!num.empty()) {
-                temp_vert[count] = std::stod(num);
-                ++count;
-                num.clear();
+    meshes.emplace_back(mesh());
+
+    while (getline(model_file, model_file_line)) {
+        if (model_file_line.empty())
+            continue;
+        size_t line_index = 0;
+
+        std::string line_type = get_line_type(model_file_line, line_index);
+
+        if (line_type == "v") {
+            model_vertices.emplace_back(get_values<glm::vec3, 3>(model_file_line, line_index));
+        }
+        else if (line_type == "vt") {
+            model_texture_vertices.emplace_back(get_values<glm::vec2, 2>(model_file_line, line_index));
+        }
+        else if (line_type == "vn") {
+            model_normals.emplace_back(get_values<glm::vec3, 3>(model_file_line, line_index));
+        }
+        else if (line_type == "f") {
+            unroll_face(model_file_line, line_index);
+        }
+        else if (line_type == "mtllib") {
+            parse_mat_file(get_file_path(model_file_line, line_index));
+        }
+        else if (line_type == "usemtl") {
+            std::string mat_name;
+            size_t index_back = model_file_line.size() - 1;
+
+            skip_white_space(model_file_line, index_back, true);
+
+            for (line_index;line_index <= index_back;++line_index) {
+                mat_name += model_file_line.at(line_index);
             }
 
-            skip_white_space_forward(line, index);
-        }
-        else {
-            num += line.at(index);
-            ++index;
+            if (first_mesh) {
+                first_mesh = false;
+                meshes.back().mesh_mat = &materials[mat_name];
+                continue;
+            }
+
+            meshes.push_back(mesh());
+
+            meshes.back().mesh_mat = &materials[mat_name];
         }
     }
-
-    if (!num.empty() && count < 3)
-        temp_vert[count] = std::stod(num);
-
-    return temp_vert;
-}
-
-face_type supported_face_type(std::string& line, int temp_index) {
-    int slash_count = 0;
-    int first_slash_index = 0;
-    face_type f_type = unsupported;
-
-    while (temp_index < line.size() && !is_white_space(line.at(temp_index)) && slash_count < 2) {
-        if (line.at(temp_index) == '/' && slash_count == 0) {
-            first_slash_index = temp_index;
-            ++slash_count;
-        }
-        else if (line.at(temp_index) == '/') {
-            if (temp_index - first_slash_index != 1) {
-                f_type = v_vt_vn;
-                break;
-            }
-            else if (temp_index - first_slash_index == 1) {
-                f_type = v_vn;
-                break;
-            }
-            ++slash_count;
-        }
-        ++temp_index;
-    }
-
-    return f_type;
-
-}
-
-void skip_white_space_forward(std::string& line, int& index) {
-    while (index < line.size() && is_white_space(line.at(index)))
-        ++index;
-}
-
-bool is_white_space(char c) {
-    return std::isspace(static_cast<unsigned int>(c));
+    setup();
 }

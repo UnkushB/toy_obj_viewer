@@ -68,7 +68,7 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = "P:/3dObjViewer/build/dependencies/glfw/docs"
+OUTPUT_DIRECTORY       = "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/docs"
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create up to 4096
 # sub-directories (in 2 levels) under the output directory of each output format
@@ -810,7 +810,7 @@ FILE_VERSION_FILTER    =
 # DoxygenLayout.xml, doxygen will parse it automatically even if the LAYOUT_FILE
 # tag is left empty.
 
-LAYOUT_FILE            = "P:/3dObjViewer/dependencies/glfw/docs/DoxygenLayout.xml"
+LAYOUT_FILE            = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/DoxygenLayout.xml"
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files containing
 # the reference definitions. This must be a list of .bib files. The .bib
@@ -926,7 +926,7 @@ WARN_LINE_FORMAT       = "at line $line of file $file"
 # specified the warning and error messages are written to standard output
 # (stdout).
 
-WARN_LOGFILE           = "P:/3dObjViewer/build/dependencies/glfw/docs/warnings.txt"
+WARN_LOGFILE           = "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/docs/warnings.txt"
 
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
@@ -939,22 +939,22 @@ WARN_LOGFILE           = "P:/3dObjViewer/build/dependencies/glfw/docs/warnings.t
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  =  \
-"P:/3dObjViewer/dependencies/glfw/include/GLFW/glfw3.h" \
-"P:/3dObjViewer/dependencies/glfw/include/GLFW/glfw3native.h" \
-"P:/3dObjViewer/dependencies/glfw/docs/main.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/news.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/quick.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/moving.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/compile.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/build.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/intro.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/context.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/monitor.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/window.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/input.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/vulkan.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/compat.md" \
-"P:/3dObjViewer/dependencies/glfw/docs/internal.md"
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/include/GLFW/glfw3.h" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/include/GLFW/glfw3native.h" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/main.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/news.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/quick.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/moving.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/compile.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/build.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/intro.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/context.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/monitor.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/window.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/input.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/vulkan.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/compat.md" \
+"P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/internal.md"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1039,7 +1039,7 @@ EXCLUDE_SYMBOLS        = APIENTRY GLFWAPI
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           = "P:/3dObjViewer/dependencies/glfw/examples"
+EXAMPLE_PATH           = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/examples"
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
@@ -1279,7 +1279,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            = "P:/3dObjViewer/dependencies/glfw/docs/header.html"
+HTML_HEADER            = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/header.html"
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1289,7 +1289,7 @@ HTML_HEADER            = "P:/3dObjViewer/dependencies/glfw/docs/header.html"
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            = "P:/3dObjViewer/dependencies/glfw/docs/footer.html"
+HTML_FOOTER            = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/footer.html"
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1319,7 +1319,7 @@ HTML_STYLESHEET        =
 # documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = "P:/3dObjViewer/dependencies/glfw/docs/extra.css"
+HTML_EXTRA_STYLESHEET  = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/extra.css"
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1329,7 +1329,7 @@ HTML_EXTRA_STYLESHEET  = "P:/3dObjViewer/dependencies/glfw/docs/extra.css"
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = "P:/3dObjViewer/dependencies/glfw/docs/spaces.svg"
+HTML_EXTRA_FILES       = "P:/toy_obj_viewer/toy_obj_viewer/dependencies/glfw/docs/spaces.svg"
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

@@ -1,9 +1,9 @@
 
-if (NOT EXISTS "P:/3dObjViewer/build/dependencies/glfw/install_manifest.txt")
-    message(FATAL_ERROR "Cannot find install manifest: \"P:/3dObjViewer/build/dependencies/glfw/install_manifest.txt\"")
+if (NOT EXISTS "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: \"P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/install_manifest.txt\"")
 endif()
 
-file(READ "P:/3dObjViewer/build/dependencies/glfw/install_manifest.txt" files)
+file(READ "P:/toy_obj_viewer/toy_obj_viewer/build/dependencies/glfw/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 
 foreach (file ${files})
